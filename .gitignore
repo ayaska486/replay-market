@@ -1,0 +1,10 @@
+.chrome-profile*/
+__pycache__/
+*.pyc
+dist/
+index.standalone.html
+update_log.txt
+*.png
+test-*.js
+target-dump.html
+final-dump.html

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>重演 · 模拟投资决策训练</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070a10">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar"></header>
+  <main>
+    <aside id="left"></aside>
+    <section id="center">
+      <div id="chartHead"></div>
+      <div id="chartBox">
+        <canvas id="chart"></canvas>
+        <div id="chartTip" class="chart-tip" aria-hidden="true"></div>
+        <div id="chartWatermark" class="chart-watermark">REPLAY</div>
+      </div>
+      <div id="timeBar"></div>
+      <nav id="tabs"></nav>
+      <div id="tabBody"></div>
+    </section>
+    <aside id="right"></aside>
+  </main>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- 涨跌表情包：只做小角落提示，不挡视野 -->
+<div id="moodPop" class="mood-pop" aria-hidden="true">
+  <div class="mood-frame"><img id="moodImg" alt=""></div>
+  <div class="mood-caption"><b id="moodTitle">涨了</b><span id="moodPct"></span></div>
+</div>
+
+<!-- 爆仓特效层 -->
+<div id="fxLayer" class="liq-fx" aria-hidden="true">
+  <div class="liq-meme-bg" id="liqMemeBg"></div>
+  <canvas id="fxCanvas"></canvas>
+  <div class="liq-flash"></div>
+  <div class="liq-vignette"></div>
+  <div class="liq-scan"></div>
+  <div class="liq-crack"></div>
+
+  <!-- 晴天娃娃 & 空中飞人 -->
+  <div class="liq-carnival" aria-hidden="true">
+    <div class="liq-rain"></div>
+    <div class="liq-cloud liq-cloud-a"></div>
+    <div class="liq-cloud liq-cloud-b"></div>
+    <div class="liq-sunny sunny-a">
+      <svg viewBox="0 0 100 190" class="sunny-svg" aria-hidden="true">
+        <line x1="50" y1="0" x2="50" y2="49" stroke="rgba(255,235,214,.6)" stroke-width="1.2" stroke-dasharray="2 4"/>
+        <circle cx="50" cy="75" r="27" fill="#f2eadb" stroke="#d8c8b6" stroke-width="1.4"/>
+        <path d="M23 92 Q50 166 77 92 Q50 104 23 92Z" fill="#f2eadb" stroke="#d8c8b6" stroke-width="1.4"/>
+        <path d="M39 69 l7 7 M46 69 l-7 7 M61 69 l7 7 M68 69 l-7 7" stroke="#5b4a43" stroke-width="1.7" stroke-linecap="round"/>
+        <path d="M43 86 Q50 90 57 86" fill="none" stroke="#9f7d6c" stroke-width="1.4" stroke-linecap="round"/>
+        <path d="M28 112 l-8 13 M72 112 l8 13" stroke="#d8c8b6" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="33" cy="82" r="3" fill="rgba(255,120,120,.22)"/>
+        <circle cx="67" cy="82" r="3" fill="rgba(255,120,120,.22)"/>
+        <text x="50" y="139" text-anchor="middle" fill="#8d7567" font-size="9" font-family="serif">晴</text>
+      </svg>
+      <span class="sunny-label">明天会晴的</span>
+    </div>
+    <div class="liq-sunny sunny-b">
+      <svg viewBox="0 0 100 190" class="sunny-svg" aria-hidden="true">
+        <line x1="50" y1="0" x2="50" y2="49" stroke="rgba(255,235,214,.5)" stroke-width="1.2" stroke-dasharray="2 4"/>
+        <circle cx="50" cy="75" r="27" fill="#ebe4d8" stroke="#cbbbaa" stroke-width="1.4"/>
+        <path d="M23 92 Q50 166 77 92 Q50 104 23 92Z" fill="#ebe4d8" stroke="#cbbbaa" stroke-width="1.4"/>
+        <path d="M39 69 l7 7 M46 69 l-7 7 M61 69 l7 7 M68 69 l-7 7" stroke="#5b4a43" stroke-width="1.7" stroke-linecap="round"/>
+        <path d="M44 87 Q50 84 56 87" fill="none" stroke="#9f7d6c" stroke-width="1.4" stroke-linecap="round"/>
+        <path d="M28 112 l-8 13 M72 112 l8 13" stroke="#cbbbaa" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="33" cy="82" r="3" fill="rgba(255,120,120,.18)"/>
+        <circle cx="67" cy="82" r="3" fill="rgba(255,120,120,.18)"/>
+      </svg>
+      <span class="sunny-label">系统提示：阴</span>
+    </div>
+    <div class="liq-sunny sunny-c">
+      <svg viewBox="0 0 100 190" class="sunny-svg" aria-hidden="true">
+        <line x1="50" y1="0" x2="50" y2="49" stroke="rgba(255,235,214,.45)" stroke-width="1.2" stroke-dasharray="2 4"/>
+        <circle cx="50" cy="75" r="27" fill="#f2eadb" stroke="#d8c8b6" stroke-width="1.2"/>
+        <path d="M23 92 Q50 166 77 92 Q50 104 23 92Z" fill="#f2eadb" stroke="#d8c8b6" stroke-width="1.2"/>
+        <path d="M39 70 l7 6 M46 70 l-7 6 M61 70 l7 6 M68 70 l-7 6" stroke="#5b4a43" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M43 87 Q50 91 57 87" fill="none" stroke="#9f7d6c" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <div class="liq-trapeze">
+      <div class="trapeze-rig">
+        <svg viewBox="0 0 520 250" class="trapeze-svg" aria-hidden="true">
+          <path d="M166 -10 L204 64 M354 -10 L316 64" fill="none" stroke="rgba(255,196,150,.28)" stroke-width="2"/>
+          <line x1="188" y1="64" x2="332" y2="64" stroke="#efc98d" stroke-width="4" stroke-linecap="round"/>
+          <line x1="204" y1="64" x2="238" y2="42" stroke="rgba(239,201,141,.65)" stroke-width="2"/>
+          <line x1="316" y1="64" x2="282" y2="42" stroke="rgba(239,201,141,.65)" stroke-width="2"/>
+          <circle cx="260" cy="52" r="11" fill="#1c0d0d" stroke="#ff9d82" stroke-width="1.5"/>
+          <path d="M260 63 Q272 92 255 115 Q242 135 258 153" fill="none" stroke="#1c0d0d" stroke-width="9" stroke-linecap="round"/>
+          <path d="M260 68 Q240 88 230 64 M260 68 Q280 88 292 64" fill="none" stroke="#ffd4a3" stroke-width="3" stroke-linecap="round"/>
+          <path d="M255 115 Q230 129 218 150 M258 153 Q280 172 298 166" fill="none" stroke="#1c0d0d" stroke-width="6" stroke-linecap="round"/>
+          <path d="M256 66 Q292 51 320 78 Q333 92 318 100" fill="none" stroke="#ff304e" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+          <path d="M318 100 L342 88 M318 100 L344 108 M318 100 L328 119" fill="none" stroke="#ff304e" stroke-width="2" opacity=".65"/>
+        </svg>
+      </div>
+      <div class="trapeze-label">空中飞人 <em>· 无保护措施</em></div>
+    </div>
+    <div class="liq-flyer">
+      <svg viewBox="0 0 140 64" aria-hidden="true">
+        <path d="M8 42 Q44 4 92 12" fill="none" stroke="rgba(255,180,145,.35)" stroke-width="1.5" stroke-dasharray="3 5"/>
+        <circle cx="104" cy="20" r="6" fill="#ffd4a3"/>
+        <path d="M104 26 Q116 35 111 47 Q108 55 96 57" fill="none" stroke="#ffd4a3" stroke-width="3" stroke-linecap="round"/>
+        <path d="M106 29 Q128 22 132 35" fill="none" stroke="#ff304e" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M110 44 Q124 51 131 44 M96 57 Q88 62 82 56" fill="none" stroke="#ffd4a3" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+      <span>空中飞人</span>
+    </div>
+    <div class="liq-carnival-caption" id="fxCarnivalCaption">晴天娃娃申请加班，空中飞人拒绝保险。</div>
+  </div>
+
+  <div class="liq-stamp">
+    <b>爆仓</b>
+    <span>MARGIN CALL</span>
+    <i>强制平仓</i>
+  </div>
+  <div class="liq-ticker">
+    <div class="liq-ticker-label">紧急快讯</div>
+    <div class="liq-ticker-track"><span></span></div>
+  </div>
+  <div class="liq-manual" id="liqManual">
+    <button class="liq-manual-btn" id="liqManualBtn" type="button" data-action="liq-report">查看结算报告 · 手动退出</button>
+    <small>此界面不会自动关闭</small>
+  </div>
+</div>
+
+<!-- 开场 -->
+<div id="onboard" class="onboard">
+  <div class="ob-orb ob-orb-a"></div>
+  <div class="ob-orb ob-orb-b"></div>
+  <div class="ob-grid"></div>
+  <div class="ob-card">
+    <div class="ob-topline">
+      <span class="ob-kicker">REPLAY / DECISION LAB</span>
+      <span class="ob-version">NO. 03 · 无限杠杆版</span>
+    </div>
+    <h1>重演<span class="ob-dot">.</span></h1>
+    <p class="ob-lead">这不是一个炒股游戏。<br>它不排名、不荐股、不给你买卖点。它只做一件事：<b>让你看清自己的决策质量，而不是收益率。</b></p>
+    <div class="ob-steps">
+      <div class="ob-step">
+        <span class="ob-num">01</span>
+        <div><b>选一个标的，写不完决策日志不能下单</b><p>A 股、AI 巨头（英伟达 / AMD / 谷歌 / 微软 / SpaceX / 三星 / SK 海力士等）、AI 产业硬件、外汇（含日元 / 加元）、比特币、以太坊、黄金。理由、预期、信心、持有期、止损线——先有判断，再有仓位。</p></div>
+      </div>
+      <div class="ob-step">
+        <span class="ob-num">02</span>
+        <div><b>下单瞬间，推演 1000 条平行时间线</b><p>用这段历史里的日收益做块状重采样，告诉你这笔决策有几种未来会亏，几种会爆。</p></div>
+      </div>
+      <div class="ob-step ob-step-hot">
+        <span class="ob-num">03</span>
+        <div><b>杠杆不设上限。但数学会收利息。</b><p>1× 到任意倍，随你输入。维持担保比例跌破 <span class="mono">130%</span> 强制平仓——高到一定程度，<em>开仓即爆</em>。涨跌有表情包，爆仓有晴天娃娃、空中飞人和惊恐背景。</p></div>
+        <span class="ob-new">NEW</span>
+      </div>
+      <div class="ob-step">
+        <span class="ob-num">04</span>
+        <div><b>买入后时间自动开始，回来看复盘</b><p>时间会自动流动，可随时暂停或切到 2× 流速。赚了可能是运气，亏了可能是运气差——这里会把判断、赔率、杠杆和运气拆开。</p></div>
+      </div>
+    </div>
+    <div class="ob-bottom">
+      <div>
+        <div class="ob-highrisk"><span>LIVE · 每日更新</span> A 股、美股 AI 巨头、腾讯 / 阿里、主要外汇、黄金、BTC、三星与 SK 每天约 <b>08:10 / 17:10</b> 自动更新。OpenAI / Anthropic / DeepSeek / 月之暗面 / 幻方 / 字节 / ETH / SpaceX / AI 硬件为教学模拟。</div>
+        <p class="ob-note">真实日线覆盖 A 股、美股 AI 巨头、腾讯控股 / 阿里巴巴、主要外汇、黄金、BTC、三星电子与 SK 海力士；OpenAI、Anthropic、DeepSeek、月之暗面、幻方量化、字节跳动、ETH、SpaceX 与显卡内存价格为教学模拟，不是实时报价。仅用于教学演示，不构成任何投资建议。每局随机抽取起点。</p>
+        <div class="ob-capital">
+          <div class="ob-capital-head">
+            <label for="startCapitalInput">起始资金 <span class="ob-capital-badge">不填 = 1 万</span></label>
+            <span class="ob-capital-tip">准备拿多少钱来交学费？</span>
+          </div>
+          <div class="ob-capital-row">
+            <span class="ob-capital-input"><i>¥</i><input id="startCapitalInput" type="number" inputmode="numeric" min="10000" step="10000" placeholder="不填 = 10,000" aria-label="起始资金，不填默认一万元"></span>
+            <div class="ob-capital-presets" aria-label="起始资金快捷选择">
+              <button class="ob-capital-preset" type="button" data-action="capital-preset" data-amount="10000">1万 · 交个学费</button>
+              <button class="ob-capital-preset" type="button" data-action="capital-preset" data-amount="100000">10万 · 认真一把</button>
+              <button class="ob-capital-preset" type="button" data-action="capital-preset" data-amount="1000000">100万 · 体验人生</button>
+            </div>
+          </div>
+          <p class="ob-capital-hint">不填就默认 <b>¥10,000</b> 开局。写多了不一定赚得多，但一定亏得快。</p>
+        </div>
+      </div>
+      <button id="obStart" class="btn primary big" data-action="start">进入重演 <span>→</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- 角色选择 -->
+<div id="roleSelect" class="role-select hide">
+  <div class="role-orb role-orb-a"></div>
+  <div class="role-orb role-orb-b"></div>
+  <div class="role-panel">
+    <div class="role-top">
+      <button class="text-btn" type="button" data-action="back-role">← 返回开场</button>
+      <span>CHOOSE YOUR OPERATOR / 16 ROLES</span>
+    </div>
+    <div class="role-heading">
+      <h2>你可以不扎人，但你身上不能没刺</h2>
+      <p>选择你的角色。同一个市场，十六种死法——选一个愿意为你的决策负责的人。</p>
+    </div>
+    <div id="roleGrid" class="role-grid"></div>
+    <div class="role-footer">
+      <div id="rolePicked" class="role-picked"><span class="role-empty">还没有选择角色</span></div>
+      <div class="role-actions">
+        <span class="role-note">角色只影响叙事，不改变杠杆与强平规则</span>
+        <button class="btn" type="button" data-action="back-role">返回</button>
+        <button id="roleGo" class="btn primary" type="button" data-action="confirm-role" disabled>选择角色后进入</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
