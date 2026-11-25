@@ -1,6 +1,8 @@
 name: Update market data
 
 on:
+  push:
+    branches: [main]
   schedule:
     # GitHub Actions cron is UTC. 00:10 UTC = 08:10 China, 09:10 UTC = 17:10 China.
     - cron: "10 0,9 * * *"
