@@ -10,6 +10,13 @@ if errorlevel 1 (
   pause
   exit /b 0
 )
+echo 正在同步远程行情提交...
+git pull --rebase origin main
+if errorlevel 1 (
+  echo 同步远程失败，请检查网络/代理或手动处理冲突。
+  pause
+  exit /b 1
+)
 echo 正在推送到 GitHub...
 git push
 if errorlevel 1 (
